@@ -1,29 +1,17 @@
 {
-  "id": "coach",
-  "name": "Coach",
-  "tagline": "Transformez des prospects en clients payants",
-  "description": "Idéal pour les coaches de vie, business ou sportifs. 3 types d'appels pour qualifier et convertir.",
-  "icon": "🎯",
+  "id": "consultation-business",
+  "name": "Consultation Business",
+  "tagline": "Votre événement prêt en 1 clic",
+  "description": "Session de consultation business de 30 minutes. Un lien Zoom te sera envoyé automatiquement à la confirmation !",
+  "icon": "💼",
   "color": "#6366f1",
-  "badge": "Populaire",
+  "badge": null,
   "events": [
     {
-      "name": "Appel découverte",
+      "name": "Consultation Business",
       "duration": 30,
-      "description": "Un premier échange sans engagement pour cerner vos besoins et voir si nous sommes faits pour travailler ensemble.",
-      "slug": "appel-decouverte"
-    },
-    {
-      "name": "Session stratégique",
-      "duration": 60,
-      "description": "Analyse approfondie de votre situation et élaboration d'un plan d'action personnalisé.",
-      "slug": "session-strategique"
-    },
-    {
-      "name": "Suivi mensuel",
-      "duration": 45,
-      "description": "Point mensuel pour ajuster la stratégie et célébrer vos victoires.",
-      "slug": "suivi-mensuel"
+      "description": "Session de consultation business de 30 minutes. Un lien Zoom vous sera envoyé automatiquement à la confirmation.",
+      "slug": "consultation-business"
     }
   ]
 }
