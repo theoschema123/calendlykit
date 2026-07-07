@@ -14,12 +14,47 @@ interface CalendlyStatus {
   userUri: string | null;
 }
 
+interface InstallResult {
+  name: string;
+  success: boolean;
+  scheduling_url?: string;
+  error?: string;
+}
+
 interface InstallResponse {
   success: boolean;
   status: "success" | "partial" | "failed";
   template: string;
-  results: { name: string; success: boolean; scheduling_url?: string; error?: string }[];
+  results: InstallResult[];
   summary: { total: number; created: number; failed: number };
+}
+
+async function createCalEvent(apiKey: string, event: { name: string; duration: number; description?: string; slug?: string }): Promise<InstallResult> {
+  try {
+    const slug = event.slug || event.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const res = await fetch("https://api.cal.com/v2/event-types", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "cal-api-version": "2024-06-14",
+      },
+      body: JSON.stringify({
+        title: event.name,
+        slug,
+        description: event.description ?? "",
+        lengthInMinutes: event.duration,
+        locations: [{ type: "integration", integration: "cal-video" }],
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { name: event.name, success: false, error: data.message ?? "Erreur API" };
+    }
+    return { name: event.name, success: true, scheduling_url: `https://cal.com/${data.data?.slug ?? slug}` };
+  } catch (err) {
+    return { name: event.name, success: false, error: String(err) };
+  }
 }
 
 export default function DashboardClient() {
@@ -50,11 +85,9 @@ export default function DashboardClient() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
       setUserEmail(user.email);
-
       const templatesRes = await fetch("/api/templates");
       const templatesData = await templatesRes.json();
       setTemplates(templatesData.templates ?? []);
-
       await refreshCalendlyStatus();
       setLoading(false);
     };
@@ -63,9 +96,7 @@ export default function DashboardClient() {
 
   useEffect(() => {
     const error = searchParams.get("error");
-    if (error) {
-      showToast("error", "Une erreur est survenue. Reessayez.");
-    }
+    if (error) showToast("error", "Une erreur est survenue. Reessayez.");
   }, [searchParams, showToast]);
 
   const handleInstall = async (templateId: string) => {
@@ -75,17 +106,37 @@ export default function DashboardClient() {
     }
     setInstallingId(templateId);
     try {
+      // Get API key and events from server
       const res = await fetch("/api/install-template", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ templateId }),
       });
-      const data: InstallResponse = await res.json();
+      const data = await res.json();
       if (!res.ok) {
-        showToast("error", (data as unknown as { error: string }).error ?? "Erreur lors de l'installation.");
+        showToast("error", data.error ?? "Erreur.");
         return;
       }
-      setInstallResult(data);
+
+      // Call Cal.com API directly from browser (no server restrictions)
+      const { apiKey, events, templateName } = data;
+      const results: InstallResult[] = [];
+      for (const event of events) {
+        const result = await createCalEvent(apiKey, event);
+        results.push(result);
+      }
+
+      const created = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success).length;
+      const status = failed === 0 ? "success" : created > 0 ? "partial" : "failed";
+
+      setInstallResult({
+        success: true,
+        status,
+        template: templateName,
+        results,
+        summary: { total: results.length, created, failed },
+      });
     } catch {
       showToast("error", "Erreur reseau.");
     } finally {
@@ -125,7 +176,7 @@ export default function DashboardClient() {
             { num: 3, label: "Installer", done: false },
           ].map((step, i) => (
             <div key={i} className="flex items-center gap-2">
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
                 step.done ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" : "bg-white/[0.04] text-gray-500 border border-white/[0.06]"
               }`}>
                 <span>{step.done ? "v" : step.num}</span>
