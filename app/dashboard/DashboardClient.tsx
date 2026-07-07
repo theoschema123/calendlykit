@@ -35,24 +35,26 @@ async function createCalendlyEvent(
   event: { name: string; duration: number; description?: string }
 ): Promise<InstallResult> {
   try {
+    const body: Record<string, unknown> = {
+      name: event.name,
+      host: ownerUri,
+      duration: event.duration,
+      kind: "solo",
+    };
+    if (event.description) {
+      body.description_html = `<p>${event.description}</p>`;
+    }
     const res = await fetch("https://api.calendly.com/event_types", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        name: event.name,
-        host: ownerUri,
-        duration: event.duration,
-        description_html: event.description ? `<p>${event.description}</p>` : undefined,
-        kind: "solo",
-        type: "StandardEventType",
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) {
-      return { name: event.name, success: false, error: data.message ?? data.title ?? "Erreur API" };
+      return { name: event.name, success: false, error: data.message ?? data.title ?? JSON.stringify(data) };
     }
     return {
       name: event.name,
