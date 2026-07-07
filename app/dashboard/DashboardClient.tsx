@@ -5,65 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { TemplateCard } from "@/components/TemplateCard";
 import { CalendlyStatusBanner } from "@/components/CalendlyStatusBanner";
-import { InstallResultModal } from "@/components/InstallResultModal";
 import { Navbar } from "@/components/Navbar";
 import { Template } from "@/lib/types";
 
 interface CalendlyStatus {
   connected: boolean;
   userUri: string | null;
-}
-
-interface InstallResult {
-  name: string;
-  success: boolean;
-  scheduling_url?: string;
-  error?: string;
-}
-
-interface InstallResponse {
-  success: boolean;
-  status: "success" | "partial" | "failed";
-  template: string;
-  results: InstallResult[];
-  summary: { total: number; created: number; failed: number };
-}
-
-async function createCalendlyEvent(
-  token: string,
-  ownerUri: string,
-  event: { name: string; duration: number; description?: string }
-): Promise<InstallResult> {
-  try {
-    const body: Record<string, unknown> = {
-      name: event.name,
-      host: ownerUri,
-      duration: event.duration,
-      kind: "solo",
-    };
-    if (event.description) {
-      body.description_html = `<p>${event.description}</p>`;
-    }
-    const res = await fetch("https://api.calendly.com/event_types", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { name: event.name, success: false, error: data.message ?? data.title ?? JSON.stringify(data) };
-    }
-    return {
-      name: event.name,
-      success: true,
-      scheduling_url: data.resource?.scheduling_url,
-    };
-  } catch (err) {
-    return { name: event.name, success: false, error: String(err) };
-  }
 }
 
 export default function DashboardClient() {
@@ -73,8 +20,6 @@ export default function DashboardClient() {
   const [userEmail, setUserEmail] = useState<string | undefined>();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [calendlyStatus, setCalendlyStatus] = useState<CalendlyStatus>({ connected: false, userUri: null });
-  const [installingId, setInstallingId] = useState<string | null>(null);
-  const [installResult, setInstallResult] = useState<InstallResponse | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -108,48 +53,23 @@ export default function DashboardClient() {
     if (error) showToast("error", "Une erreur est survenue. Reessayez.");
   }, [searchParams, showToast]);
 
-  const handleInstall = async (templateId: string) => {
-    if (!calendlyStatus.connected) {
-      showToast("error", "Connectez d'abord votre compte Calendly.");
-      return;
-    }
-    setInstallingId(templateId);
-    try {
-      const res = await fetch("/api/install-template", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateId }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        showToast("error", data.error ?? "Erreur.");
-        return;
-      }
+  const handleInstall = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
 
-      const { token, ownerUri, events, templateName } = data;
-      const results: InstallResult[] = [];
-      for (const event of events) {
-        const result = await createCalendlyEvent(token, ownerUri, event);
-        results.push(result);
-        await new Promise(r => setTimeout(r, 300));
-      }
+    // Open Calendly pre-filled new event type page for each event
+    template.events.forEach((event, i) => {
+      setTimeout(() => {
+        const params = new URLSearchParams({
+          name: event.name,
+          duration: String(event.duration),
+          description: event.description ?? "",
+        });
+        window.open(`https://calendly.com/event_types/new?${params.toString()}`, "_blank");
+      }, i * 500);
+    });
 
-      const created = results.filter(r => r.success).length;
-      const failed = results.filter(r => !r.success).length;
-      const status = failed === 0 ? "success" : created > 0 ? "partial" : "failed";
-
-      setInstallResult({
-        success: true,
-        status,
-        template: templateName,
-        results,
-        summary: { total: results.length, created, failed },
-      });
-    } catch {
-      showToast("error", "Erreur reseau.");
-    } finally {
-      setInstallingId(null);
-    }
+    showToast("success", `Calendly s'ouvre ! Cliquez "Save" pour chaque evenement.`);
   };
 
   const handleConnected = useCallback(async () => {
@@ -174,7 +94,7 @@ export default function DashboardClient() {
       <main className="max-w-3xl mx-auto px-6 py-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-100 mb-1">Installer votre template</h1>
-          <p className="text-gray-400 text-sm">Connectez Calendly puis installez votre evenement en 1 clic.</p>
+          <p className="text-gray-400 text-sm">Connectez-vous a Calendly puis cliquez Installer — l&apos;evenement s&apos;ouvrira pre-configure, il vous suffira de cliquer Save.</p>
         </div>
 
         <div className="flex items-center gap-2 mb-6">
@@ -210,22 +130,17 @@ export default function DashboardClient() {
               template={template}
               isCalendlyConnected={calendlyStatus.connected}
               onInstall={handleInstall}
-              isInstalling={installingId === template.id}
+              isInstalling={false}
             />
           ))}
         </div>
-      </main>
 
-      {installResult && (
-        <InstallResultModal
-          isOpen={true}
-          onClose={() => setInstallResult(null)}
-          templateName={installResult.template}
-          results={installResult.results}
-          summary={installResult.summary}
-          status={installResult.status}
-        />
-      )}
+        <div className="mt-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <p className="text-xs text-amber-400">
+            Une fenetre Calendly va s&apos;ouvrir avec l&apos;evenement pre-configure. Cliquez simplement &quot;Save&quot; pour le creer sur votre compte.
+          </p>
+        </div>
+      </main>
 
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 max-w-sm px-4 py-3 rounded-xl shadow-xl border text-sm font-medium ${
