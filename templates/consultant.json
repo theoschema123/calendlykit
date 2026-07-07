@@ -1,0 +1,35 @@
+{
+  "id": "consultant",
+  "name": "Consultant",
+  "tagline": "Vendez votre expertise, pas votre temps",
+  "description": "Pour les consultants indépendants. Structurez votre pipeline de la prise de contact au rapport final.",
+  "icon": "💼",
+  "color": "#10b981",
+  "badge": "Nouveau",
+  "events": [
+    {
+      "name": "Prise de contact",
+      "duration": 20,
+      "description": "Échange rapide pour qualifier votre besoin et voir si une mission peut se dessiner.",
+      "slug": "prise-de-contact"
+    },
+    {
+      "name": "Audit initial",
+      "duration": 90,
+      "description": "Diagnostic complet de votre situation actuelle, identification des leviers et des points bloquants.",
+      "slug": "audit-initial"
+    },
+    {
+      "name": "Présentation recommandations",
+      "duration": 60,
+      "description": "Restitution structurée des conclusions de l'audit et des recommandations priorisées.",
+      "slug": "presentation-recommandations"
+    },
+    {
+      "name": "Atelier de travail",
+      "duration": 120,
+      "description": "Session de travail collaborative pour implémenter les recommandations avec vos équipes.",
+      "slug": "atelier-travail"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "agency",
+  "name": "Agence",
+  "tagline": "Gérez vos clients comme une machine bien huilée",
+  "description": "Parfait pour les agences digitales, marketing ou créatives. Du brief au bilan mensuel.",
+  "icon": "🏢",
+  "color": "#0ea5e9",
+  "badge": null,
+  "events": [
+    {
+      "name": "Brief projet",
+      "duration": 30,
+      "description": "Comprendre vos objectifs, votre audience et les attentes pour démarrer votre projet dans les meilleures conditions.",
+      "slug": "brief-projet"
+    },
+    {
+      "name": "Présentation offre",
+      "duration": 45,
+      "description": "Découvrez nos solutions sur mesure et la façon dont nous pouvons faire croître votre activité.",
+      "slug": "presentation-offre"
+    },
+    {
+      "name": "Kickoff projet",
+      "duration": 60,
+      "description": "Lancement officiel de votre projet : validation du planning, des livrables et des points de contact.",
+      "slug": "kickoff-projet"
+    },
+    {
+      "name": "Point mensuel",
+      "duration": 30,
+      "description": "Bilan mensuel des performances, ajustements stratégiques et prochaines étapes.",
+      "slug": "point-mensuel"
+    }
+  ]
+}

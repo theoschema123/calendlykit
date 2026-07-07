@@ -1,0 +1,29 @@
+{
+  "id": "freelance",
+  "name": "Freelance",
+  "tagline": "Simplifiez votre relation client de A à Z",
+  "description": "Pour les développeurs, designers et créatifs freelances. Du devis à la livraison.",
+  "icon": "⚡",
+  "color": "#f59e0b",
+  "badge": null,
+  "events": [
+    {
+      "name": "Appel devis",
+      "duration": 30,
+      "description": "Échange pour définir le périmètre de votre projet et préparer un devis précis.",
+      "slug": "appel-devis"
+    },
+    {
+      "name": "Revue de mi-projet",
+      "duration": 45,
+      "description": "Point à mi-parcours pour valider les livrables intermédiaires et ajuster si nécessaire.",
+      "slug": "revue-mi-projet"
+    },
+    {
+      "name": "Livraison finale",
+      "duration": 30,
+      "description": "Présentation des livrables finaux, prise en main et formation si besoin.",
+      "slug": "livraison-finale"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "coach",
+  "name": "Coach",
+  "tagline": "Transformez des prospects en clients payants",
+  "description": "Idéal pour les coaches de vie, business ou sportifs. 3 types d'appels pour qualifier et convertir.",
+  "icon": "🎯",
+  "color": "#6366f1",
+  "badge": "Populaire",
+  "events": [
+    {
+      "name": "Appel découverte",
+      "duration": 30,
+      "description": "Un premier échange sans engagement pour cerner vos besoins et voir si nous sommes faits pour travailler ensemble.",
+      "slug": "appel-decouverte"
+    },
+    {
+      "name": "Session stratégique",
+      "duration": 60,
+      "description": "Analyse approfondie de votre situation et élaboration d'un plan d'action personnalisé.",
+      "slug": "session-strategique"
+    },
+    {
+      "name": "Suivi mensuel",
+      "duration": 45,
+      "description": "Point mensuel pour ajuster la stratégie et célébrer vos victoires.",
+      "slug": "suivi-mensuel"
+    }
+  ]
+}
