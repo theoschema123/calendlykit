@@ -29,29 +29,36 @@ interface InstallResponse {
   summary: { total: number; created: number; failed: number };
 }
 
-async function createCalEvent(apiKey: string, event: { name: string; duration: number; description?: string; slug?: string }): Promise<InstallResult> {
+async function createCalendlyEvent(
+  token: string,
+  ownerUri: string,
+  event: { name: string; duration: number; description?: string }
+): Promise<InstallResult> {
   try {
-    const slug = event.slug || event.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const res = await fetch("https://api.cal.com/v2/event-types", {
+    const res = await fetch("https://api.calendly.com/event_types", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-        "cal-api-version": "2024-06-14",
       },
       body: JSON.stringify({
-        title: event.name,
-        slug,
-        description: event.description ?? "",
-        lengthInMinutes: event.duration,
-        locations: [{ type: "integration", integration: "cal-video" }],
+        name: event.name,
+        host: ownerUri,
+        duration: event.duration,
+        description_html: event.description ? `<p>${event.description}</p>` : undefined,
+        kind: "solo",
+        type: "StandardEventType",
       }),
     });
     const data = await res.json();
     if (!res.ok) {
-      return { name: event.name, success: false, error: data.message ?? "Erreur API" };
+      return { name: event.name, success: false, error: data.message ?? data.title ?? "Erreur API" };
     }
-    return { name: event.name, success: true, scheduling_url: `https://cal.com/${data.data?.slug ?? slug}` };
+    return {
+      name: event.name,
+      success: true,
+      scheduling_url: data.resource?.scheduling_url,
+    };
   } catch (err) {
     return { name: event.name, success: false, error: String(err) };
   }
@@ -101,12 +108,11 @@ export default function DashboardClient() {
 
   const handleInstall = async (templateId: string) => {
     if (!calendlyStatus.connected) {
-      showToast("error", "Connectez d'abord votre compte Cal.com.");
+      showToast("error", "Connectez d'abord votre compte Calendly.");
       return;
     }
     setInstallingId(templateId);
     try {
-      // Get API key and events from server
       const res = await fetch("/api/install-template", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,12 +124,12 @@ export default function DashboardClient() {
         return;
       }
 
-      // Call Cal.com API directly from browser (no server restrictions)
-      const { apiKey, events, templateName } = data;
+      const { token, ownerUri, events, templateName } = data;
       const results: InstallResult[] = [];
       for (const event of events) {
-        const result = await createCalEvent(apiKey, event);
+        const result = await createCalendlyEvent(token, ownerUri, event);
         results.push(result);
+        await new Promise(r => setTimeout(r, 300));
       }
 
       const created = results.filter(r => r.success).length;
@@ -146,7 +152,7 @@ export default function DashboardClient() {
 
   const handleConnected = useCallback(async () => {
     await refreshCalendlyStatus();
-    showToast("success", "Cal.com connecte avec succes !");
+    showToast("success", "Calendly connecte avec succes !");
   }, [refreshCalendlyStatus, showToast]);
 
   if (loading) {
@@ -166,13 +172,13 @@ export default function DashboardClient() {
       <main className="max-w-3xl mx-auto px-6 py-10">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-100 mb-1">Installer votre template</h1>
-          <p className="text-gray-400 text-sm">Connectez Cal.com puis installez votre evenement en 1 clic.</p>
+          <p className="text-gray-400 text-sm">Connectez Calendly puis installez votre evenement en 1 clic.</p>
         </div>
 
         <div className="flex items-center gap-2 mb-6">
           {[
             { num: 1, label: "Connexion compte", done: !!userEmail },
-            { num: 2, label: "Connecter Cal.com", done: calendlyStatus.connected },
+            { num: 2, label: "Connecter Calendly", done: calendlyStatus.connected },
             { num: 3, label: "Installer", done: false },
           ].map((step, i) => (
             <div key={i} className="flex items-center gap-2">
