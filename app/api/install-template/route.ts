@@ -7,12 +7,7 @@ export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerSupabaseClient(request, response);
 
   try {
-    const body = await request.json();
-    const { templateId } = body as { templateId: string };
-
-    if (!templateId) {
-      return NextResponse.json({ error: "templateId is required" }, { status: 400 });
-    }
+    const { templateId } = await request.json();
 
     const template = getTemplateById(templateId);
     if (!template) {
@@ -26,17 +21,17 @@ export async function POST(request: NextRequest) {
 
     const { data: userData } = await supabase
       .from("users")
-      .select("calendly_access_token")
+      .select("calendly_access_token, calendly_user_uri")
       .eq("id", user.id)
       .single();
 
-    if (!userData?.calendly_access_token) {
-      return NextResponse.json({ error: "Cal.com not connected" }, { status: 403 });
+    if (!userData?.calendly_access_token || !userData?.calendly_user_uri) {
+      return NextResponse.json({ error: "Calendly not connected" }, { status: 403 });
     }
 
-    // Return the API key and events to the client — client will call Cal.com directly
     return NextResponse.json({
-      apiKey: userData.calendly_access_token,
+      token: userData.calendly_access_token,
+      ownerUri: userData.calendly_user_uri,
       events: template.events,
       templateName: template.name,
     });
