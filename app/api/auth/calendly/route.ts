@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
   try {
     const { apiKey } = await request.json();
 
-    if (!apiKey || !apiKey.startsWith("cal_")) {
-      return NextResponse.json({ error: "Cle API invalide. Elle doit commencer par cal_" }, { status: 400 });
+    if (!apiKey || !apiKey.startsWith("eyJ")) {
+      return NextResponse.json({ error: "Token invalide. Il doit commencer par eyJ" }, { status: 400 });
     }
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -19,7 +19,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
     }
 
-    const ownerUri = `cal:${user.id}`;
+    // Get Calendly user URI using the token
+    const calendlyRes = await fetch("https://api.calendly.com/users/me", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+
+    if (!calendlyRes.ok) {
+      return NextResponse.json({ error: "Token Calendly invalide" }, { status: 400 });
+    }
+
+    const calendlyData = await calendlyRes.json();
+    const ownerUri = calendlyData.resource?.uri;
 
     await supabase.from("users").upsert({
       id: user.id,
@@ -33,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[cal-connect]", err);
+    console.error("[calendly-connect]", err);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
