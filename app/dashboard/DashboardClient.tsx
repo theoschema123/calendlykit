@@ -39,6 +39,12 @@ export default function DashboardClient() {
     setTimeout(() => setToast(null), 4000);
   }, []);
 
+  const refreshCalendlyStatus = useCallback(async () => {
+    const statusRes = await fetch("/api/user/calendly-status");
+    const statusData = await statusRes.json();
+    setCalendlyStatus({ connected: statusData.connected, userUri: statusData.userUri });
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -49,33 +55,16 @@ export default function DashboardClient() {
       const templatesData = await templatesRes.json();
       setTemplates(templatesData.templates ?? []);
 
-      const statusRes = await fetch("/api/user/calendly-status");
-      const statusData = await statusRes.json();
-      setCalendlyStatus({ connected: statusData.connected, userUri: statusData.userUri });
-
+      await refreshCalendlyStatus();
       setLoading(false);
     };
     init();
-  }, [router]);
+  }, [router, refreshCalendlyStatus]);
 
   useEffect(() => {
-    const connected = searchParams.get("connected");
     const error = searchParams.get("error");
-
-    if (connected === "true") {
-      showToast("success", "Cal.com connecté avec succès !");
-      fetch("/api/user/calendly-status").then(r => r.json()).then(data => {
-        setCalendlyStatus({ connected: data.connected, userUri: data.userUri });
-      });
-    } else if (error) {
-      const errorMessages: Record<string, string> = {
-        calendly_denied: "Connexion annulée.",
-        token_exchange_failed: "Échec de connexion. Réessayez.",
-        db_error: "Erreur de base de données.",
-        not_authenticated: "Vous devez être connecté.",
-        missing_code: "Code manquant.",
-      };
-      showToast("error", errorMessages[error] ?? "Une erreur est survenue.");
+    if (error) {
+      showToast("error", "Une erreur est survenue. Reessayez.");
     }
   }, [searchParams, showToast]);
 
@@ -98,11 +87,16 @@ export default function DashboardClient() {
       }
       setInstallResult(data);
     } catch {
-      showToast("error", "Erreur réseau.");
+      showToast("error", "Erreur reseau.");
     } finally {
       setInstallingId(null);
     }
   };
+
+  const handleConnected = useCallback(async () => {
+    await refreshCalendlyStatus();
+    showToast("success", "Cal.com connecte avec succes !");
+  }, [refreshCalendlyStatus, showToast]);
 
   if (loading) {
     return (
@@ -118,23 +112,23 @@ export default function DashboardClient() {
   return (
     <>
       <Navbar userEmail={userEmail} />
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      <main className="max-w-3xl mx-auto px-6 py-10">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-100 mb-1">Templates Cal.com</h1>
-          <p className="text-gray-400 text-sm">Choisissez un template et installez-le en un clic.</p>
+          <h1 className="text-2xl font-bold text-gray-100 mb-1">Installer votre template</h1>
+          <p className="text-gray-400 text-sm">Connectez Cal.com puis installez votre evenement en 1 clic.</p>
         </div>
 
         <div className="flex items-center gap-2 mb-6">
           {[
             { num: 1, label: "Connexion compte", done: !!userEmail },
             { num: 2, label: "Connecter Cal.com", done: calendlyStatus.connected },
-            { num: 3, label: "Installer un template", done: false },
+            { num: 3, label: "Installer", done: false },
           ].map((step, i) => (
             <div key={i} className="flex items-center gap-2">
               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 step.done ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" : "bg-white/[0.04] text-gray-500 border border-white/[0.06]"
               }`}>
-                <span>{step.done ? "✓" : step.num}</span>
+                <span>{step.done ? "v" : step.num}</span>
                 <span className="hidden sm:inline">{step.label}</span>
               </div>
               {i < 2 && <div className="w-4 h-px bg-white/[0.08]" />}
@@ -143,10 +137,14 @@ export default function DashboardClient() {
         </div>
 
         <div className="mb-8">
-          <CalendlyStatusBanner isConnected={calendlyStatus.connected} userUri={calendlyStatus.userUri} />
+          <CalendlyStatusBanner
+            isConnected={calendlyStatus.connected}
+            userUri={calendlyStatus.userUri}
+            onConnected={handleConnected}
+          />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {templates.map((template) => (
             <TemplateCard
               key={template.id}
@@ -157,10 +155,6 @@ export default function DashboardClient() {
             />
           ))}
         </div>
-
-        <p className="text-center text-xs text-gray-600 mt-10">
-          Les événements sont créés directement dans votre espace Cal.com via l&apos;API officielle.
-        </p>
       </main>
 
       {installResult && (
