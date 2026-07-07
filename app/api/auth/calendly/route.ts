@@ -19,19 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
     }
 
-    const calRes = await fetch("https://api.cal.com/v2/me", {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "cal-api-version": "2024-06-14",
-      },
-    });
-
-    if (!calRes.ok) {
-      return NextResponse.json({ error: "Cle API invalide ou expiree" }, { status: 400 });
-    }
-
-    const calData = await calRes.json();
-    const ownerUri = `cal:${calData.data?.id ?? user.id}`;
+    const ownerUri = `cal:${user.id}`;
 
     await supabase.from("users").upsert({
       id: user.id,
