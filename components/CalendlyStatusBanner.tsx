@@ -12,27 +12,25 @@ export function CalendlyStatusBanner({ isConnected, userUri, onConnected }: Cale
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const handleConnect = async () => {
     if (!apiKey.trim()) return;
     setLoading(true);
     setError(null);
-
     try {
       const res = await fetch("/api/auth/calendly", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey: apiKey.trim() }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.error ?? "Erreur de connexion");
         return;
       }
-
       setApiKey("");
+      setShowForm(false);
       onConnected();
     } catch {
       setError("Erreur reseau");
@@ -41,19 +39,17 @@ export function CalendlyStatusBanner({ isConnected, userUri, onConnected }: Cale
     }
   };
 
-  if (isConnected) {
+  if (isConnected && !showForm) {
     return (
       <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
         <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         <div className="flex-1">
           <p className="text-sm font-medium text-emerald-300">Cal.com connecte</p>
-          {userUri && (
-            <p className="text-xs text-emerald-500/80 mt-0.5 font-mono truncate max-w-xs">{userUri}</p>
-          )}
+          {userUri && <p className="text-xs text-emerald-500/80 mt-0.5 font-mono truncate max-w-xs">{userUri}</p>}
         </div>
         <button
-          onClick={() => onConnected()}
-          className="text-xs text-emerald-500 hover:text-emerald-300 transition-colors"
+          onClick={() => setShowForm(true)}
+          className="text-xs text-emerald-500 hover:text-emerald-300 transition-colors underline"
         >
           Changer de cle
         </button>
@@ -87,8 +83,11 @@ export function CalendlyStatusBanner({ isConnected, userUri, onConnected }: Cale
           {loading ? "Verification..." : "Connecter"}
         </button>
       </div>
-      {error && (
-        <p className="text-xs text-red-400 mt-2">{error}</p>
+      {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+      {isConnected && (
+        <button onClick={() => setShowForm(false)} className="text-xs text-gray-500 hover:text-gray-300 mt-2 transition-colors">
+          Annuler
+        </button>
       )}
     </div>
   );
