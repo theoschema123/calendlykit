@@ -11,9 +11,9 @@ export function CalendlyStatusBanner({ isConnected, userUri }: CalendlyStatusBan
       <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
         <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         <div>
-          <p className="text-sm font-medium text-emerald-300">Cal.com connecté ✅</p>
+          <p className="text-sm font-medium text-emerald-300">Cal.com connecté</p>
           {userUri && (
-            <p className="text-xs text-emerald-500/80 mt-0.5 font-mono truncate max-w-[300px]">{userUri}</p>
+            <p className="text-xs text-emerald-500/80 mt-0.5 font-mono truncate max-w-xs">{userUri}</p>
           )}
         </div>
         <div className="ml-auto">
@@ -40,4 +40,5 @@ export function CalendlyStatusBanner({ isConnected, userUri }: CalendlyStatusBan
       </a>
     </div>
   );
+}
 }
